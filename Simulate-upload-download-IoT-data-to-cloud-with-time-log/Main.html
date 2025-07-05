@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Cloud Upload/Download Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4facfe;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.danger {
+            background: linear-gradient(45deg, #ff6b6b 0%, #ee5a52 100%);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn.success {
+            background: linear-gradient(45deg, #51cf66 0%, #40c057 100%);
+            box-shadow: 0 5px 15px rgba(81, 207, 102, 0.3);
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .status.success {
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: linear-gradient(45deg, #d1ecf1, #bee5eb);
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .log-section {
+            grid-column: 1 / -1;
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .log-header {
+            background: #333;
+            padding: 15px;
+            border-bottom: 1px solid #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-content {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+
+        .log-entry.upload {
+            color: #4facfe;
+        }
+
+        .log-entry.download {
+            color: #00f2fe;
+        }
+
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+
+        .log-entry.success {
+            color: #51cf66;
+        }
+
+        .file-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #4facfe;
+        }
+
+        .crypto-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+            font-size: 12px;
+        }
+
+        .crypto-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #4facfe;
+        }
+
+        .crypto-item strong {
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .crypto-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 IoT Cloud Simulator</h1>
+            <p>Giả lập upload/download dữ liệu IoT với bảo mật AES-GCM + RSA</p>
+        </div>
+
+        <div class="main-content">
+            <div class="section">
+                <h2>📤 Upload IoT Data</h2>
+                <div class="form-group">
+                    <label for="sensorType">Loại cảm biến:</label>
+                    <select id="sensorType">
+                        <option value="temperature">Nhiệt độ</option>
+                        <option value="humidity">Độ ẩm</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sensorData">Dữ liệu cảm biến:</label>
+                    <textarea id="sensorData" rows="4" placeholder="Nhập dữ liệu cảm biến hoặc tạo dữ liệu mẫu..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="generateSampleData()">🎲 Tạo dữ liệu mẫu</button>
+                <button class="btn success" onclick="uploadData()">📤 Upload dữ liệu</button>
+                
+                <div id="uploadStatus"></div>
+                
+                <div class="file-info" id="uploadInfo" style="display: none;">
+                    <strong>📁 Thông tin file đã upload:</strong>
+                    <div id="uploadDetails"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📥 Download IoT Data</h2>
+                <div class="form-group">
+                    <label for="downloadFile">File cần download:</label>
+                    <select id="downloadFile">
+                        <option value="">Chọn file để download...</option>
+                    </select>
+                </div>
+                
+                <button class="btn" onclick="refreshFileList()">🔄 Làm mới danh sách</button>
+                <button class="btn success" onclick="downloadData()">📥 Download dữ liệu</button>
+                
+                <div id="downloadStatus"></div>
+                
+                <div class="file-info" id="downloadInfo" style="display: none;">
+                    <strong>📄 Nội dung file đã download:</strong>
+                    <div id="downloadContent"></div>
+                </div>
+            </div>
+
+            <div class="log-section">
+                <div class="log-header">
+                    <h2>📋 Transaction Logs</h2>
+                    <button class="btn danger" onclick="clearLogs()">🗑️ Xóa logs</button>
+                </div>
+                <div class="log-content" id="logContent">
+                    <div class="log-entry info">[SYSTEM] IoT Cloud Simulator đã sẵn sàng...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <script>
+        // Giả lập cloud storage
+        let cloudStorage = {};
+        let sessionKeys = {};
+        let logEntries = [];
+
+        // Khởi tạo RSA key pair (giả lập)
+        const RSA_KEY_SIZE = 1024;
+        let clientKeyPair, serverKeyPair;
+
+        // Khởi tạo hệ thống
+        function initializeSystem() {
+            // Giả lập tạo RSA key pairs
+            clientKeyPair = generateRSAKeyPair();generateSampleData
+            serverKeyPair = generateRSAKeyPair();
+            
+            addLog('SYSTEM', 'RSA key pairs đã được tạo (1024-bit)', 'info');
+            addLog('SYSTEM', 'Hệ thống cloud simulator sẵn sàng', 'success');
+        }
+
+        // Giả lập tạo RSA key pair
+        function generateRSAKeyPair() {
+    const keySuffix = Math.random().toString(36).substr(2, 16);
+    return {
+        publicKey: `RSA-PUBLIC-KEY-${keySuffix}`,
+        privateKey: `RSA-PRIVATE-KEY-${keySuffix}`
+    };
+}
+
+        // Tạo dữ liệu mẫu
+        function generateSampleData() {
+            const sensorType = document.getElementById('sensorType').value;
+            const timestamp = new Date().toISOString();
+            let sampleData = '';
+
+            switch(sensorType) {
+                case 'temperature':
+                    sampleData = `# Temperature Sensor Data
+Timestamp: ${timestamp}
+Sensor ID: TEMP_001
+Location: Hanoi, Vietnam
+Data:
+${Array.from({length: 10}, (_, i) => 
+    `${new Date(Date.now() - (9-i) * 60000).toISOString()}, ${(20 + Math.random() * 15).toFixed(2)}°C`
+).join('\n')}`;
+                    break;
+                case 'humidity':
+                    sampleData = `# Humidity Sensor Data
+Timestamp: ${timestamp}
+Sensor ID: HUM_001
+Location: Hanoi, Vietnam
+Data:
+${Array.from({length: 10}, (_, i) => 
+    `${new Date(Date.now() - (9-i) * 60000).toISOString()}, ${(40 + Math.random() * 40).toFixed(2)}%`
+).join('\n')}`;
+                    break;
+            }
+
+            document.getElementById('sensorData').value = sampleData;
+            addLog('SYSTEM', `Đã tạo dữ liệu mẫu cho cảm biến ${sensorType}`, 'info');
+        }
+
+        // Upload dữ liệu
+        async function uploadData() {
+            const sensorType = document.getElementById('sensorType').value;
+            const sensorData = document.getElementById('sensorData').value;
+
+            if (!sensorData.trim()) {
+                showStatus('uploadStatus', 'Vui lòng nhập dữ liệu cảm biến!', 'error');
+                return;
+            }
+
+            showLoading(true);
+            addLog('UPLOAD', 'Bắt đầu quá trình upload...', 'upload');
+
+            try {
+                // 1. Handshake
+                addLog('UPLOAD', 'Step 1: Handshake - Gửi "Hello!" đến cloud', 'upload');
+                await sleep(500);
+                addLog('CLOUD', 'Handshake - Nhận "Hello!", phản hồi "Ready!"', 'success');
+
+                // 2. Xác thực & Trao khóa
+                const timestamp = new Date().toISOString();
+                const filename = `sensor_data_${sensorType}_${Date.now()}.txt`;
+                const metadata = {
+                    filename: filename,
+                    timestamp: timestamp,
+                    sensorType: sensorType,
+                    size: sensorData.length
+                };
+
+                addLog('UPLOAD', 'Step 2: Ký metadata bằng RSA/SHA-512', 'upload');
+                const metadataSignature = signWithRSA(JSON.stringify(metadata), clientKeyPair.privateKey);
+
+                // Tạo session key cho AES-GCM
+                const sessionKey = generateAESKey();
+                const encryptedSessionKey = encryptWithRSA(sessionKey, serverKeyPair.publicKey);
+                
+                addLog('UPLOAD', 'Step 2: Mã hóa SessionKey bằng RSA-OAEP', 'upload');
+                await sleep(300);
+
+                // 3. Mã hóa & Kiểm tra toàn vẹn
+                addLog('UPLOAD', 'Step 3: Mã hóa dữ liệu bằng AES-GCM', 'upload');
+                const nonce = generateNonce();
+                const encryptionResult = encryptAESGCM(sensorData, sessionKey, nonce);
+                
+                const hashInput = nonce + encryptionResult.ciphertext + encryptionResult.tag;
+                const hash = calculateSHA512(hashInput);
+                
+                addLog('UPLOAD', 'Step 3: Tính hash SHA-512 để kiểm tra toàn vẹn', 'upload');
+                await sleep(300);
+
+                // Tạo gói tin upload
+                const uploadPacket = {
+                    nonce: nonce,
+                    cipher: encryptionResult.ciphertext,
+                    tag: encryptionResult.tag,
+                    hash: hash,
+                    sig: metadataSignature,
+                    metadata: metadata,
+                    encryptedSessionKey: encryptedSessionKey
+                };
+
+                addLog('UPLOAD', 'Step 4: Gửi gói tin qua socket đến cloud', 'upload');
+                await sleep(500);
+
+                // 4. Xử lý phía cloud
+                addLog('CLOUD', 'Nhận gói tin, bắt đầu xác thực...', 'info');
+                
+                // Giải mã session key
+                const decryptedSessionKey = decryptWithRSA(uploadPacket.encryptedSessionKey, serverKeyPair.privateKey);
+                
+                // Kiểm tra hash
+                const computedHash = calculateSHA512(uploadPacket.nonce + uploadPacket.cipher + uploadPacket.tag);
+                addLog('CLOUD', `Hash nhận được: ${uploadPacket.hash.substr(0, 20)}...`, 'info');
+                addLog('CLOUD', `Hash tính toán: ${computedHash.substr(0, 20)}...`, 'info');
+                
+                 if (computedHash !== uploadPacket.hash) {
+                     throw new Error('Hash không khớp - dữ liệu có thể bị thay đổi');
+                 }
+                addLog('CLOUD', '✓ Kiểm tra hash thành công (demo mode)', 'success');
+                addLog('CLOUD', '✓ Kiểm tra hash thành công', 'success');
+
+                // Kiểm tra chữ ký
+                const isValidSignature = verifyRSASignature(JSON.stringify(uploadPacket.metadata), uploadPacket.sig, clientKeyPair.publicKey);
+                if (!isValidSignature) {
+                    throw new Error('Chữ ký không hợp lệ');
+                }
+                addLog('CLOUD', '✓ Kiểm tra chữ ký RSA thành công', 'success');
+
+                // Giải mã dữ liệu
+                const decryptedData = decryptAESGCM(uploadPacket.cipher, decryptedSessionKey, uploadPacket.nonce, uploadPacket.tag);
+                if (!decryptedData) {
+                    throw new Error('Không thể giải mã dữ liệu - tag không hợp lệ');
+                }
+                addLog('CLOUD', '✓ Giải mã AES-GCM thành công', 'success');
+
+                // Lưu vào cloud storage
+                cloudStorage[filename] = {
+                    data: decryptedData,
+                    metadata: metadata,
+                    uploadTime: new Date().toISOString(),
+                    sessionKey: decryptedSessionKey
+                };
+
+                addLog('CLOUD', `✓ Lưu file ${filename} thành công`, 'success');
+                addLog('CLOUD', 'Gửi ACK đến client', 'success');
+
+                // Cập nhật giao diện
+                showStatus('uploadStatus', `✅ Upload thành công! File: ${filename}`, 'success');
+                
+                document.getElementById('uploadInfo').style.display = 'block';
+                document.getElementById('uploadDetails').innerHTML = `
+                    <div class="crypto-info">
+                        <div class="crypto-item">
+                            <strong>Tên file:</strong><br>${filename}
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Loại cảm biến:</strong><br>${sensorType}
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Kích thước:</strong><br>${sensorData.length} bytes
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Thời gian:</strong><br>${new Date().toLocaleString('vi-VN')}
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Mã hóa:</strong><br>AES-GCM
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Chữ ký:</strong><br>RSA/SHA-512
+                        </div>
+                    </div>
+                `;
+
+                refreshFileList();
+                addLog('UPLOAD', `✅ Upload hoàn tất: ${filename}`, 'success');
+
+            } catch (error) {
+                addLog('ERROR', `❌ Upload thất bại: ${error.message}`, 'error');
+                addLog('CLOUD', 'Gửi NACK đến client', 'error');
+                showStatus('uploadStatus', `❌ Lỗi: ${error.message}`, 'error');
+            }
+
+            showLoading(false);
+        }
+
+        // Download dữ liệu
+        async function downloadData() {
+            const selectedFile = document.getElementById('downloadFile').value;
+
+            if (!selectedFile) {
+                showStatus('downloadStatus', 'Vui lòng chọn file để download!', 'error');
+                return;
+            }
+
+            showLoading(true);
+            addLog('DOWNLOAD', 'Bắt đầu quá trình download...', 'download');
+
+            try {
+                // Tạo yêu cầu download với chữ ký
+                const downloadRequest = {
+                    filename: selectedFile,
+                    timestamp: new Date().toISOString(),
+                    clientId: 'CLIENT_001'
+                };
+
+                addLog('DOWNLOAD', 'Tạo yêu cầu download với chữ ký RSA/SHA-512', 'download');
+                const requestSignature = signWithRSA(JSON.stringify(downloadRequest), clientKeyPair.privateKey);
+                
+                addLog('DOWNLOAD', 'Gửi yêu cầu download đến cloud', 'download');
+                await sleep(500);
+
+                // Xử lý phía cloud
+                addLog('CLOUD', 'Nhận yêu cầu download, kiểm tra chữ ký...', 'info');
+                
+                const isValidRequest = verifyRSASignature(JSON.stringify(downloadRequest), requestSignature, clientKeyPair.publicKey);
+                if (!isValidRequest) {
+                    throw new Error('Xác thực không hợp lệ - chữ ký yêu cầu không đúng');
+                }
+                
+                addLog('CLOUD', '✓ Xác thực yêu cầu thành công', 'success');
+
+                if (!cloudStorage[selectedFile]) {
+                    throw new Error('File không tồn tại trên cloud');
+                }
+
+                const fileData = cloudStorage[selectedFile];
+                
+                // Mã hóa lại dữ liệu để gửi
+                const nonce = generateNonce();
+                const encryptionResult = encryptAESGCM(fileData.data, fileData.sessionKey, nonce);
+                const hashInput = nonce + encryptionResult.ciphertext + encryptionResult.tag;
+                const hash = calculateSHA512(hashInput);
+                const metadataSignature = signWithRSA(JSON.stringify(fileData.metadata), serverKeyPair.privateKey);
+
+                const downloadPacket = {
+                    nonce: nonce,
+                    cipher: encryptionResult.ciphertext,
+                    tag: encryptionResult.tag,
+                    hash: hash,
+                    sig: metadataSignature,
+                    metadata: fileData.metadata
+                };
+
+                addLog('CLOUD', 'Gửi gói tin download đến client', 'success');
+                await sleep(500);
+
+                // Xử lý phía client
+                addLog('DOWNLOAD', 'Nhận gói tin, bắt đầu kiểm tra...', 'download');
+
+                // Kiểm tra hash
+                const computedHash = calculateSHA512(downloadPacket.nonce + downloadPacket.cipher + downloadPacket.tag);
+                addLog('DOWNLOAD', `Hash nhận được: ${downloadPacket.hash.substr(0, 20)}...`, 'info');
+                addLog('DOWNLOAD', `Hash tính toán: ${computedHash.substr(0, 20)}...`, 'info');
+                
+                 if (computedHash !== downloadPacket.hash) {
+                     throw new Error('Hash không khớp - dữ liệu có thể bị thay đổi');
+                 }
+                addLog('DOWNLOAD', '✓ Kiểm tra hash thành công (demo mode)', 'success');
+
+                // Kiểm tra chữ ký metadata
+                const isValidMetadata = verifyRSASignature(JSON.stringify(downloadPacket.metadata), downloadPacket.sig, serverKeyPair.publicKey);
+                if (!isValidMetadata) {
+                    throw new Error('Chữ ký metadata không hợp lệ');
+                }
+                addLog('DOWNLOAD', '✓ Kiểm tra chữ ký metadata thành công', 'success');
+
+                // Giải mã dữ liệu
+                const decryptedData = decryptAESGCM(downloadPacket.cipher, fileData.sessionKey, downloadPacket.nonce, downloadPacket.tag);
+                if (!decryptedData) {
+                    throw new Error('Không thể giải mã dữ liệu - tag không hợp lệ');
+                }
+                addLog('DOWNLOAD', '✓ Giải mã AES-GCM thành công', 'success');
+
+                addLog('DOWNLOAD', 'Gửi ACK đến cloud', 'success');
+
+                // Hiển thị kết quả
+                showStatus('downloadStatus', `✅ Download thành công! File: ${selectedFile}`, 'success');
+                
+                document.getElementById('downloadInfo').style.display = 'block';
+                document.getElementById('downloadContent').innerHTML = `
+                    <div class="crypto-info">
+                        <div class="crypto-item">
+                            <strong>Tên file:</strong><br>${selectedFile}
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Kích thước:</strong><br>${decryptedData.length} bytes
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Upload lúc:</strong><br>${new Date(fileData.uploadTime).toLocaleString('vi-VN')}
+                        </div>
+                        <div class="crypto-item">
+                            <strong>Download lúc:</strong><br>${new Date().toLocaleString('vi-VN')}
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; max-height: 200px; overflow-y: auto;">
+                        <strong>📄 Nội dung file:</strong><br>
+                        <pre style="white-space: pre-wrap; font-size: 12px; margin-top: 10px;">${decryptedData}</pre>
+                    </div>
+                `;
+
+                addLog('DOWNLOAD', `✅ Download hoàn tất: ${selectedFile}`, 'success');
+
+            } catch (error) {
+                addLog('ERROR', `❌ Download thất bại: ${error.message}`, 'error');
+                addLog('CLOUD', 'Gửi NACK đến client', 'error');
+                showStatus('downloadStatus', `❌ Lỗi: ${error.message}`, 'error');
+            }
+
+            showLoading(false);
+        }
+
+        // Làm mới danh sách file
+        function refreshFileList() {
+            const select = document.getElementById('downloadFile');
+            select.innerHTML = '<option value="">Chọn file để download...</option>';
+            
+            Object.keys(cloudStorage).forEach(filename => {
+                const option = document.createElement('option');
+                option.value = filename;
+                option.textContent = `${filename} (${new Date(cloudStorage[filename].uploadTime).toLocaleString('vi-VN')})`;
+                select.appendChild(option);
+            });
+
+            addLog('SYSTEM', `Danh sách file đã được cập nhật (${Object.keys(cloudStorage).length} files)`, 'info');
+        }
+
+        // Các hàm mã hóa giả lập
+        function generateAESKey() {
+            return 'AES-KEY-' + Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        }
+
+        function generateNonce() {
+            return 'NONCE-' + Array.from({length: 12}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        }
+
+        function encryptAESGCM(plaintext, key, nonce) {
+            // Giả lập mã hóa AES-GCM
+            const ciphertext = 'CIPHER-' + btoa(plaintext).replace(/[^a-zA-Z0-9]/g, '');
+            const tag = 'TAG-' + Array.from({length: 16}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+            return { ciphertext, tag };
+        }
+
+        function decryptAESGCM(ciphertext, key, nonce, tag) {
+            // Giả lập giải mã AES-GCM
+            try {
+                if (!ciphertext.startsWith('CIPHER-')) return null;
+                const encoded = ciphertext.replace('CIPHER-', '');
+                return atob(encoded);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function encryptWithRSA(data, publicKey) {
+            return 'RSA-ENC-' + btoa(data).replace(/[^a-zA-Z0-9]/g, '');
+        }
+
+        function decryptWithRSA(encryptedData, privateKey) {
+            try {
+                if (!encryptedData.startsWith('RSA-ENC-')) return null;
+                const encoded = encryptedData.replace('RSA-ENC-', '');
+                return atob(encoded);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function signWithRSA(data, privateKey) {
+            return 'RSA-SIG-' + calculateSHA512(data + privateKey).substr(0, 32);
+        }
+
+       function verifyRSASignature(data, signature, publicKey) {
+    const keySuffix = publicKey.replace('RSA-PUBLIC-KEY-', '');
+    const expectedSig = 'RSA-SIG-' + calculateSHA512(data + 'RSA-PRIVATE-KEY-' + keySuffix).substr(0, 32);
+    return signature === expectedSig;
+}
+
+        function calculateSHA512(input) {
+            // Giả lập SHA-512 hash - deterministic để tránh lỗi validation
+            let hash = 0;
+            for (let i = 0; i < input.length; i++) {
+                const char = input.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            // Sử dụng seed cố định để hash nhất quán
+            const seed = Math.abs(hash).toString(16).padStart(16, '0');
+            return 'SHA512-' + seed + '0'.repeat(48);
+        }
+
+        // Utility functions
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => {
+                element.innerHTML = '';
+            }, 5000);
+        }
+
+        function addLog(type, message, category = 'info') {
+            const timestamp = new Date().toLocaleString('vi-VN');
+            const logEntry = `[${timestamp}] [${type}] ${message}`;
+            logEntries.push({ timestamp, type, message, category });
+            
+            const logContent = document.getElementById('logContent');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-entry ${category}`;
+            logDiv.textContent = logEntry;
+            logContent.appendChild(logDiv);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        function clearLogs() {
+            logEntries = [];
+            document.getElementById('logContent').innerHTML = '<div class="log-entry info">[SYSTEM] Logs đã được xóa...</div>';
+        }
+
+        // Khởi tạo hệ thống khi trang load
+        window.addEventListener('load', function() {
+            initializeSystem();
+            
+            // Demo data cho presentation
+            setTimeout(() => {
+                addLog('SYSTEM', 'Hệ thống sẵn sàng nhận dữ liệu IoT', 'success');
+                addLog('INFO', 'Sử dụng mã hóa AES-GCM 256-bit', 'info');
+                addLog('INFO', 'Chữ ký số RSA 1024-bit với SHA-512', 'info');
+                addLog('INFO', 'Giao thức truyền: TCP Socket simulation', 'info');
+            }, 1000);
+        });
+
+        // Easter egg - double click on header to show crypto details
+        document.querySelector('.header h1').addEventListener('dblclick', function() {
+            addLog('DEBUG', '🔐 Crypto Debug Mode Activated', 'info');
+            addLog('DEBUG', `Client RSA Public: ${clientKeyPair.publicKey.substr(0, 32)}...`, 'info');
+            addLog('DEBUG', `Server RSA Public: ${serverKeyPair.publicKey.substr(0, 32)}...`, 'info');
+            addLog('DEBUG', 'AES-GCM: 256-bit keys, 96-bit nonces, 128-bit tags', 'info');
+            addLog('DEBUG', 'RSA-OAEP: SHA-256 hash, MGF1 mask generation', 'info');
+        });
+
+        // Add some visual effects
+        function addRippleEffect(e) {
+            const button = e.currentTarget;
+            const ripple = document.createElement('span');
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s ease-out;
+                pointer-events: none;
+            `;
+            
+            button.style.position = 'relative';
+            button.style.overflow = 'hidden';
+            button.appendChild(ripple);
+            
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // Add ripple effect to all buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(2);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('click', addRippleEffect);
+            });
+        });
+
+        // Auto-refresh file list every 30 seconds
+        setInterval(() => {
+            if (Object.keys(cloudStorage).length > 0) {
+                refreshFileList();
+            }
+        }, 30000);
+
+        // Simulate network latency for more realistic experience
+        function simulateNetworkLatency() {
+            return Math.random() * 200 + 100; // 100-300ms
+        }
+
+        // Enhanced error handling with specific error codes
+        const ERROR_CODES = {
+            HANDSHAKE_FAILED: 'ERR_001',
+            INVALID_SIGNATURE: 'ERR_002',
+            DECRYPTION_FAILED: 'ERR_003',
+            HASH_MISMATCH: 'ERR_004',
+            FILE_NOT_FOUND: 'ERR_005',
+            AUTHENTICATION_FAILED: 'ERR_006',
+            NETWORK_TIMEOUT: 'ERR_007'
+        };
+
+        // Add performance monitoring
+        let performanceMetrics = {
+            uploadCount: 0,
+            downloadCount: 0,
+            totalUploadTime: 0,
+            totalDownloadTime: 0,
+            errorCount: 0
+        };
+
+        function updatePerformanceMetrics(operation, duration, success = true) {
+            if (operation === 'upload') {
+                performanceMetrics.uploadCount++;
+                performanceMetrics.totalUploadTime += duration;
+            } else if (operation === 'download') {
+                performanceMetrics.downloadCount++;
+                performanceMetrics.totalDownloadTime += duration;
+            }
+            
+            if (!success) {
+                performanceMetrics.errorCount++;
+            }
+        }
+
+        // Show performance stats on triple click
+        document.querySelector('.header p').addEventListener('click', function(e) {
+            if (e.detail === 3) {
+                const avgUpload = performanceMetrics.uploadCount > 0 ? 
+                    (performanceMetrics.totalUploadTime / performanceMetrics.uploadCount).toFixed(2) : 0;
+                const avgDownload = performanceMetrics.downloadCount > 0 ? 
+                    (performanceMetrics.totalDownloadTime / performanceMetrics.downloadCount).toFixed(2) : 0;
+                
+                addLog('STATS', `📊 Performance Metrics:`, 'info');
+                addLog('STATS', `Uploads: ${performanceMetrics.uploadCount}, Avg: ${avgUpload}ms`, 'info');
+                addLog('STATS', `Downloads: ${performanceMetrics.downloadCount}, Avg: ${avgDownload}ms`, 'info');
+                addLog('STATS', `Errors: ${performanceMetrics.errorCount}`, 'info');
+                addLog('STATS', `Files in storage: ${Object.keys(cloudStorage).length}`, 'info');
+            }
+        });
+    </script>
+</body>
+</html>
